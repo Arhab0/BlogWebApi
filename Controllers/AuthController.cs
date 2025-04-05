@@ -44,7 +44,7 @@ namespace BlogWebApi.Controllers
 
             if (data == true)
             {
-                return BadRequest(new{ message="this email address is already been taken"});
+                return BadRequest(new{ message="this email address already exist"});
             }
             user.Password = Security.Encrypt(user.Password);
             user.CreatedAt = DateTime.Now;
