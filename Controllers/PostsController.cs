@@ -1,0 +1,258 @@
+﻿using BlogWebApi.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+using System.Text.Json;
+
+namespace BlogWebApi.Controllers
+{
+    public class PostsController(BlogWebDBContext context) : Controller
+    {
+        private readonly BlogWebDBContext _context = context;
+        public override JsonResult Json(object? data)
+        {
+            return new JsonResult(data, new JsonSerializerOptions { PropertyNamingPolicy = null });
+        }
+
+        public IActionResult Index()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPosts()
+        {
+            var data = await _context.Posts.Where(x=>x.IsApproved == true).AsNoTracking()
+                        .Join(_context.Categories,
+                            post => post.CatId,
+                            cat => cat.Id,
+                            (posts, cats) => new
+                            {
+                                postId = posts.Id,
+                                posts.Title,
+                                posts.Description,
+                                posts.Img,
+                                cats.Category1,
+                                categoryId = cats.Id
+                            }).ToListAsync();
+            if (data == null)
+            {
+                return BadRequest("No posts are avaliable");
+            }
+            return Json(data);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPostById(int id)
+        {
+            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            int userId = int.Parse(claims[0].Value);
+
+            var data = await _context.Posts.Where(x=>x.Id == id)
+                        .Join(_context.Categories,
+                            post => post.CatId,
+                            cat => cat.Id,
+                            (posts, cats) => new {posts,cats}
+                          )
+                        .Join(_context.Users,
+                        sc=>sc.posts.UserId,
+                        user =>user.Id,
+                        (sc, user) => new 
+                        {
+                            postId = sc.posts.Id,
+                            sc.posts.Title,
+                            sc.posts.Description,
+                            postImg = sc.posts.Img,
+                            sc.posts.CreatedAt,
+                            sc.cats.Category1,
+                            categoryId = sc.cats.Id,
+                            userId = user.Id,
+                            userPhoto = user.ProfilePic,
+                            AuthorName = user.FirstName + " " + user.LastName
+                        }).ToListAsync();
+
+            var checkOrPost = _context.RecentlyViewedPosts.Where(x => x.PostId == id && x.UserId == userId).First();
+            if (checkOrPost == null)
+            {
+                RecentlyViewedPost postDetails = new()
+                {
+                    PostId = id,
+                    UserId = userId,
+                    LastViewed = DateTime.Now
+                };
+                await _context.RecentlyViewedPosts.AddAsync(postDetails);
+            }
+            checkOrPost.LastViewed = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            if (data == null)
+            {
+                return BadRequest("No posts are avaliable");
+            }
+            return Json(data);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeletePost(int id)
+        {
+            var data = await _context.Posts.Where(x => x.Id == id).FirstAsync();
+            if (data == null)
+            {
+                return BadRequest("No posts are avaliable");
+            }
+
+            data.IsActive = false;
+            await _context.SaveChangesAsync();
+            return Json(true);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddPost(Post post, IFormFile? file)
+        {
+            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            int userId = int.Parse(claims[0].Value);
+
+            if (post == null)
+            {
+                return BadRequest();
+            }
+
+            post.CreatedAt = DateTime.Now;
+            post.UserId = userId;
+            post.IsApproved = null;
+            post.IsActive = null;
+            if (file != null)
+            {
+                post.Img = await UploadFile(file);
+            }
+
+            await _context.Posts.AddAsync(post);
+            await _context.SaveChangesAsync();
+            return Json(true);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdatePost(Post post, IFormFile? file)
+        {
+            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            int userId = int.Parse(claims[0].Value);
+
+            if (post == null)
+            {
+                return BadRequest();
+            }
+
+            var existingPost = await _context.Posts.FindAsync(post.Id);
+
+            existingPost.Title = post.Title;
+            existingPost.Description = post.Description;
+            existingPost.UserId = userId;
+            existingPost.CreatedAt = existingPost.CreatedAt;
+            existingPost.CatId = existingPost.CatId;
+
+            if (file != null)
+            {
+                existingPost.Img = await UploadFile(file);
+            }
+
+            _context.Posts.Update(existingPost);
+            await _context.SaveChangesAsync();
+
+            return Json(true);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetRecentlyViewedPost()
+        {
+            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            int userId = int.Parse(claims[0].Value);
+
+            var data = await _context.RecentlyViewedPosts.Where(x=>x.UserId == userId)
+                        .Join(_context.Posts,
+                        recent => recent.PostId,
+                        post => post.Id,
+                        (recent, post) => new
+                        {
+                            post.Id,
+                            post.Title,
+                            postDescription = post.Description.Substring(0, 20),
+                            post.Img
+                        }).ToListAsync();
+            return Json(data);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddToWatchLater(int id,bool check)
+        {
+            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            int userId = int.Parse(claims[0].Value);
+
+            var data = await _context.WatchLaters.Where(x => x.PostId == id && x.UserId== userId).FirstAsync();
+            if (data == null)
+            {
+                WatchLater _ = new()
+                {
+                    PostId = id,
+                    UserId = userId,
+                    IsActive = true
+                };
+                await _context.WatchLaters.AddAsync(_);
+            }
+            else
+            {
+                if (check == true && data.IsActive == false)
+                {
+                
+                    data.IsActive = true;
+                }
+                else data.IsActive = false;
+            }
+            await _context.SaveChangesAsync();
+            return Json(true);
+        }
+
+        public List<Claim> GetClaimsFromToken(string token)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            tokenHandler.ValidateToken(token, new TokenValidationParameters
+            {
+                ValidIssuer = "https://localhost:44385/",
+                ValidAudience = "https://localhost:44385/",
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("ArhabUmer2004$BlogWebApiSuperSecretKey123")),
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = false,
+                ValidateIssuerSigningKey = true
+            }, out SecurityToken validatedToken);
+
+            var jwtToken = (JwtSecurityToken)validatedToken;
+            return jwtToken.Claims.ToList();
+        }
+
+        private async Task<string> UploadFile(IFormFile? ufile)
+        {
+            try
+            {
+                if (ufile != null && ufile.Length > 0)
+                {
+                    var fileName = Path.GetFileName(ufile.FileName);
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\images", fileName);
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await ufile.CopyToAsync(fileStream);
+                    }
+                    return filePath;
+                }
+                return "";
+            }
+            catch
+            {
+                return "x";
+            }
+        }
+    }
+}
