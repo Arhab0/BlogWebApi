@@ -8,6 +8,8 @@ using System.Text;
 using System.Text.Json;
 using BlogWebApi.Helpers;
 using Microsoft.EntityFrameworkCore;
+using AgeCalculator;
+using AgeCalculator.Extensions;
 
 namespace BlogWebApi.Controllers
 {
@@ -46,10 +48,15 @@ namespace BlogWebApi.Controllers
             {
                 return BadRequest(new{ message="this email address already exist"});
             }
+            // need dob in this formate yyyy/mm/dd
             user.Password = Security.Encrypt(user.Password);
             user.CreatedAt = DateTime.Now;
             user.RoleId = 2;
             user.IsActive = true;
+
+            DateTime dob = user.Dob.Value.ToDateTime(new TimeOnly(0, 0));
+            var userAge = new Age(dob, DateTime.Now, true);
+            user.Age = userAge.Years;
 
             if (file != null)
             {
@@ -58,44 +65,6 @@ namespace BlogWebApi.Controllers
             await _context.Users.AddAsync(user);
             await _context.SaveChangesAsync();
             return Json(true);
-        }
-
-        [HttpPost]
-        [AllowAnonymous]
-        public async Task<IActionResult> UpdateUser(User updatedUser, IFormFile file)
-        {
-            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
-            int userId = int.Parse(claims[0].Value);
-
-            var user = await _context.Users.Where(x=>x.Id == userId).FirstAsync();
-            if (user == null)
-                return NotFound("User not found");
-
-
-            user.FirstName = updatedUser.FirstName != "" ? updatedUser.FirstName : user.FirstName;
-            user.LastName = updatedUser.LastName != "" ? updatedUser.LastName : user.LastName;
-            user.ProfilePic = updatedUser.ProfilePic != "" ? updatedUser.ProfilePic : user.ProfilePic;
-            user.Email = updatedUser.Email != "" ? updatedUser.Email : user.Email;
-            user.Gender = updatedUser.Gender != "" ? updatedUser.Gender : user.Gender;
-            user.Age = updatedUser.Age != null ? updatedUser.Age : user.Age;
-            user.Country = updatedUser.Country != "" ? updatedUser.Country : user.Country;
-            user.State = updatedUser.State != "" ? updatedUser.State : user.State;
-            user.City = updatedUser.City != "" ? updatedUser.City : user.City;
-            user.PhoneNo = updatedUser.PhoneNo != "" ? updatedUser.PhoneNo : user.PhoneNo;
-
-            if (file != null)
-            {
-                user.ProfilePic = await UploadFile(file);
-            }
-
-            if (updatedUser.Password != "")
-            {
-                user.Password = Security.Encrypt(updatedUser.Password);
-            }
-            else user.Password = user.Password;
-
-            await _context.SaveChangesAsync();
-            return Ok("User updated successfully");
         }
 
         private async Task<string> UploadFile(IFormFile? ufile)
