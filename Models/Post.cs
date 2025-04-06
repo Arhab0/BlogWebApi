@@ -11,7 +11,7 @@ public partial class Post
 
     public string Title { get; set; }
 
-    public string Desription { get; set; }
+    public string Description { get; set; }
 
     public string Img { get; set; }
 
@@ -25,11 +25,23 @@ public partial class Post
 
     public bool? IsApproved { get; set; }
 
+    public int? ApprovedBy { get; set; }
+
+    public int? RejectedBy { get; set; }
+
+    public virtual User ApprovedByNavigation { get; set; }
+
     public virtual Category Cat { get; set; }
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
+    public virtual ICollection<RecentlyViewedPost> RecentlyViewedPosts { get; set; } = new List<RecentlyViewedPost>();
+
+    public virtual User RejectedByNavigation { get; set; }
+
     public virtual ICollection<ReplyComment> ReplyComments { get; set; } = new List<ReplyComment>();
 
     public virtual User User { get; set; }
+
+    public virtual ICollection<WatchLater> WatchLaters { get; set; } = new List<WatchLater>();
 }

@@ -37,13 +37,23 @@ public partial class User
 
     public DateTime? CreatedAt { get; set; }
 
+    public DateOnly? Dob { get; set; }
+
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
-    public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
+    public virtual ICollection<Post> PostApprovedByNavigations { get; set; } = new List<Post>();
+
+    public virtual ICollection<Post> PostRejectedByNavigations { get; set; } = new List<Post>();
+
+    public virtual ICollection<Post> PostUsers { get; set; } = new List<Post>();
+
+    public virtual ICollection<RecentlyViewedPost> RecentlyViewedPosts { get; set; } = new List<RecentlyViewedPost>();
 
     public virtual ICollection<ReplyComment> ReplyCommentRepliedByNavigations { get; set; } = new List<ReplyComment>();
 
     public virtual ICollection<ReplyComment> ReplyCommentRepliedToNavigations { get; set; } = new List<ReplyComment>();
 
     public virtual Role Role { get; set; }
+
+    public virtual ICollection<WatchLater> WatchLaters { get; set; } = new List<WatchLater>();
 }

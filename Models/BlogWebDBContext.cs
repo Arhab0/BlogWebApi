@@ -19,11 +19,15 @@ public partial class BlogWebDBContext : DbContext
 
     public virtual DbSet<Post> Posts { get; set; }
 
+    public virtual DbSet<RecentlyViewedPost> RecentlyViewedPosts { get; set; }
+
     public virtual DbSet<ReplyComment> ReplyComments { get; set; }
 
     public virtual DbSet<Role> Roles { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<WatchLater> WatchLaters { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,10 +75,10 @@ public partial class BlogWebDBContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
-            entity.Property(e => e.Desription)
+            entity.Property(e => e.Description)
                 .IsRequired()
                 .HasColumnType("text")
-                .HasColumnName("desription");
+                .HasColumnName("description");
             entity.Property(e => e.Img)
                 .HasColumnType("text")
                 .HasColumnName("img");
@@ -87,15 +91,43 @@ public partial class BlogWebDBContext : DbContext
                 .HasColumnName("title");
             entity.Property(e => e.UserId).HasColumnName("user_id");
 
+            entity.HasOne(d => d.ApprovedByNavigation).WithMany(p => p.PostApprovedByNavigations)
+                .HasForeignKey(d => d.ApprovedBy)
+                .HasConstraintName("FK_Posts_users");
+
             entity.HasOne(d => d.Cat).WithMany(p => p.Posts)
                 .HasForeignKey(d => d.CatId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Posts_category1");
 
-            entity.HasOne(d => d.User).WithMany(p => p.Posts)
+            entity.HasOne(d => d.RejectedByNavigation).WithMany(p => p.PostRejectedByNavigations)
+                .HasForeignKey(d => d.RejectedBy)
+                .HasConstraintName("FK_Posts_users2");
+
+            entity.HasOne(d => d.User).WithMany(p => p.PostUsers)
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Posts_users1");
+        });
+
+        modelBuilder.Entity<RecentlyViewedPost>(entity =>
+        {
+            entity.ToTable("recently_viewed_posts");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LastViewed)
+                .HasColumnType("datetime")
+                .HasColumnName("last_viewed");
+            entity.Property(e => e.PostId).HasColumnName("post_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Post).WithMany(p => p.RecentlyViewedPosts)
+                .HasForeignKey(d => d.PostId)
+                .HasConstraintName("FK_recently_viewed_posts_Posts");
+
+            entity.HasOne(d => d.User).WithMany(p => p.RecentlyViewedPosts)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_recently_viewed_posts_users");
         });
 
         modelBuilder.Entity<ReplyComment>(entity =>
@@ -165,6 +197,7 @@ public partial class BlogWebDBContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
+            entity.Property(e => e.Dob).HasColumnName("DOB");
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(200)
@@ -205,6 +238,24 @@ public partial class BlogWebDBContext : DbContext
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .HasForeignKey(d => d.RoleId)
                 .HasConstraintName("FK_users_roles1");
+        });
+
+        modelBuilder.Entity<WatchLater>(entity =>
+        {
+            entity.ToTable("watch_later");
+
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.IsActive).HasColumnName("isActive");
+            entity.Property(e => e.PostId).HasColumnName("post_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.Post).WithMany(p => p.WatchLaters)
+                .HasForeignKey(d => d.PostId)
+                .HasConstraintName("FK_watch_later_Posts");
+
+            entity.HasOne(d => d.User).WithMany(p => p.WatchLaters)
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_watch_later_users");
         });
 
         OnModelCreatingPartial(modelBuilder);
