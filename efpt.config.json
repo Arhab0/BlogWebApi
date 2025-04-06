@@ -27,6 +27,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[recently_viewed_posts]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[reply_comments]",
          "ObjectType": 0
       },
@@ -36,6 +40,10 @@
       },
       {
          "Name": "[dbo].[users]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[watch_later]",
          "ObjectType": 0
       }
    ],
