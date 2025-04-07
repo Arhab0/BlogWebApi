@@ -72,8 +72,14 @@ namespace BlogWebApi.Controllers
 
             if (updatedUser.Dob.HasValue)
             {
-                DateTime dob = updatedUser.Dob.Value.ToDateTime(new TimeOnly(0, 0));
-                user.Age = await GetUserAge(dob);
+                var dob = updatedUser.Dob.Value;
+                var dobDateTime = new DateTime(dob.Year, dob.Month, dob.Day);
+                var today = DateTime.Today;
+
+                var age = today.Year - dobDateTime.Year;
+                if (dobDateTime.Date > today.AddYears(-age)) age--;
+
+                user.Age = age;
                 user.Dob = updatedUser.Dob;
             }
             else

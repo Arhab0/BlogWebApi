@@ -42,21 +42,30 @@ namespace BlogWebApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> CreateUser(User user, IFormFile file)
         {
+
+
             var data = await _context.Users.Where(x => x.Email == user.Email).AnyAsync();
 
             if (data == true)
             {
                 return BadRequest(new{ message="this email address already exist"});
             }
-            // need dob in this formate yyyy/mm/dd
             user.Password = Security.Encrypt(user.Password);
             user.CreatedAt = DateTime.Now;
             user.RoleId = 2;
             user.IsActive = true;
 
-            DateTime dob = user.Dob.Value.ToDateTime(new TimeOnly(0, 0));
-            var userAge = new Age(dob, DateTime.Now, true);
-            user.Age = userAge.Years;
+            if (user.Dob.HasValue)
+            {
+                var dob = user.Dob.Value;
+                var dobDateTime = new DateTime(dob.Year, dob.Month, dob.Day);
+                var today = DateTime.Today;
+
+                var age = today.Year - dobDateTime.Year;
+                if (dobDateTime.Date > today.AddYears(-age)) age--;
+
+                user.Age = age;
+            }
 
             if (file != null)
             {
