@@ -197,7 +197,9 @@ public partial class BlogWebDBContext : DbContext
             entity.Property(e => e.CreatedAt)
                 .HasColumnType("datetime")
                 .HasColumnName("createdAt");
-            entity.Property(e => e.Dob).HasColumnName("DOB");
+            entity.Property(e => e.Dob)
+                .HasColumnType("datetime")
+                .HasColumnName("DOB");
             entity.Property(e => e.Email)
                 .IsRequired()
                 .HasMaxLength(200)

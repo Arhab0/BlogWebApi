@@ -65,6 +65,7 @@ namespace BlogWebApi.Controllers
                 if (dobDateTime.Date > today.AddYears(-age)) age--;
 
                 user.Age = age;
+                user.Dob = dobDateTime;
             }
 
             if (file != null)
@@ -108,8 +109,8 @@ namespace BlogWebApi.Controllers
                 Subject = new ClaimsIdentity(new Claim[]
                 {
                     new Claim(ClaimTypes.Name, user.Id.ToString()),
-                    new Claim("FullName", user.Id.ToString()),
-                    new Claim("RoleId", user.Id.ToString())
+                    new Claim("FullName", fullName.ToString()),
+                    new Claim("RoleId", user.RoleId.ToString())
                 }),
                 Issuer = "https://localhost:44385/",
                 Audience = "https://localhost:44385/",

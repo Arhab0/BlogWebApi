@@ -37,7 +37,7 @@ public partial class User
 
     public DateTime? CreatedAt { get; set; }
 
-    public DateOnly? Dob { get; set; }
+    public DateTime? Dob { get; set; }
 
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 

@@ -80,7 +80,7 @@ namespace BlogWebApi.Controllers
                 if (dobDateTime.Date > today.AddYears(-age)) age--;
 
                 user.Age = age;
-                user.Dob = updatedUser.Dob;
+                user.Dob = dobDateTime;
             }
             else
             {
@@ -112,14 +112,6 @@ namespace BlogWebApi.Controllers
 
             var data = await _context.WatchLaters.Where(x => x.UserId == userId).ToListAsync();
             return Json(data);
-        }
-
-        private async Task<int> GetUserAge(DateTime dob)
-        {
-            //DateTime DOB = dob.Value.ToDateTime(new TimeOnly(0, 0));
-            var userAge = new Age(dob, DateTime.Now, true);
-            int age = userAge.Years;
-            return age;
         }
 
         public List<Claim> GetClaimsFromToken(string token)
