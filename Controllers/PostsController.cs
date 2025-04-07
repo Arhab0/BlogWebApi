@@ -24,6 +24,17 @@ namespace BlogWebApi.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetCategories()
+        {
+            var category = await _context.Categories.ToListAsync();
+            if (category.Count == 0)
+            {
+                return NotFound("No category found");
+            }
+            return Json(new { category });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetPosts()
         {
             var data = await _context.Posts.Where(x=>x.IsApproved == true).AsNoTracking()
