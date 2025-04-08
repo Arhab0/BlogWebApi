@@ -108,43 +108,46 @@ namespace BlogWebApi.Controllers
             }
         }
 
-        public IActionResult ForgotPassword(string email)
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult ForgotPassword(string emailAddress)
         {
-            var user = _context.Users.Where(x => x.Email == email).FirstOrDefault();
+            var user = _context.Users.FirstOrDefault(x => x.Email == emailAddress);
             if (user == null)
             {
-                return NotFound($"User not Found.");
+                return Json(new { code = "Email Not Found" });
             }
-            Random random = new();
-            int randomNumber = random.Next(1000, 10000);
-            //user.PinCode = randomNumber.ToString();
-            _context.SaveChanges();
-            Email.sendMail("Forget Password Code", $"Your code is {randomNumber}", [user.Email]);
-            return Json(new { user.Email });
-        }
+            if (user != null && user.IsActive == true)
+            {
+                var rand = new Random();
+                var uid = rand.Next(1000, 10000);
 
-        public IActionResult VerifyPin(string email, string pin)
-        {
-            var user = _context.Users.Where(x => x.Email == email).FirstOrDefault();
-            if (user == null)
-            {
-                return NotFound($"User not Found.");
+                Email.SendMessage(
+                    $"Hi {user.FirstName} {user.LastName}\n" +
+                    $"Your One Time Password(OTP) is :\r\n" +
+                    $"<b>{uid}</b>\r\n" +
+                    "Enter this code to login to your account.\n" +
+                    "Note: This code expires in 10 minutes.\n" +
+                    "Thank You!",
+                    $"OTP Verification Code - {user.FirstName} {user.LastName}",
+                    new() { emailAddress }
+                );
+
+
+                return Json(new { code = uid, userid = user.Id });
             }
-            //return Json(new { verified = user.PinCode == pin });
-            return Json(new { user.Email, pin });
+            return Json(new { code = "This User is de-activated by admin" });
         }
 
         [HttpPost]
-        public IActionResult ResetPassword(string email, string newPassword)
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateNewPassword(string password, int userId)
         {
-            var user = _context.Users.Where(x => x.Email == email).FirstOrDefault();
-            if (user == null)
-            {
-                return NotFound($"User not Found.");
-            }
-            user.Password = BitConverter.ToString(MD5.HashData(Encoding.ASCII.GetBytes(newPassword))).Replace("-", "").ToLower();
-            _context.SaveChanges();
-            return Json(new { user.Password });
+            var user = await _context.Users.Where(x => x.Id == userId).FirstAsync();
+            password = BitConverter.ToString(MD5.HashData(Encoding.ASCII.GetBytes(password))).Replace("-", "").ToLower();
+            user.Password = password;
+            await _context.SaveChangesAsync();
+            return Json(new { user });
         }
 
         private string GenerateJwtToken(User user)

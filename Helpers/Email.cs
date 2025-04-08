@@ -1,76 +1,92 @@
-﻿using System.Net.Mail;
+﻿using System.Collections.Generic;
 using System.Net;
-
+using BlogWebApi.Models;
+using MailKit.Security;
+using MailKit.Net.Smtp;
+using MimeKit;
+using System.IO;
 namespace BlogWebApi.Helpers
 {
     public class Email
     {
-        public static void sendMail(string Subject, string body, List<string> toEmail, List<(byte[] FileBytes, string FileName)> attachments = null)
+        public static string SendMessage(string msg, string subject, List<string> emailTo)
         {
-
-            var configuration = new ConfigurationBuilder()
-                    .AddJsonFile("appsettings.json")
-                    .Build();
-
-            string smtpHost = configuration["EmailSettings:Host"];
-            int smtpPort = configuration.GetValue<int>("EmailSettings:Port");
-            bool enableSsl = configuration.GetValue<bool>("EmailSettings:EnableSsl");
-            string smtpUsername = configuration["EmailSettings:Username"];
-            string smtpPassword = configuration["EmailSettings:Password"];
-            SmtpClient smtp = new SmtpClient(smtpHost)
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("No Reply", "arhabumer5@gmail.com"));
+            foreach (var email in emailTo)
             {
-                Port = smtpPort,
-                EnableSsl = enableSsl,
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(smtpUsername, smtpPassword),
+                try
+                {
+                    message.To.Add(new MailboxAddress("Recipient", email));
+                }
+                catch { }
+            }
+            message.Subject = subject;
+
+            message.Body = new TextPart("plain")
+            {
+                Text = msg
             };
-            MailMessage mail = new MailMessage
+            using (var client = new SmtpClient())
             {
-                From = new MailAddress(smtpUsername),
-                Subject = Subject,
-                Body = body,
-                IsBodyHtml = true
+                client.Connect("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+
+                client.Authenticate("arhabumer5@gmail.com", "arhab2004");
+
+                var options = FormatOptions.Default.Clone();
+
+                if (client.Capabilities.HasFlag(SmtpCapabilities.UTF8))
+                    options.International = true;
+
+                client.Send(options, message);
+
+                client.Disconnect(true);
+            }
+
+            return "Success";
+        }
+
+        public static string SendMessageWithAttachment(string msg, string subject, string emailTo, Stream file, string name)
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress("No Reply", "arhabumer5@gmail.com"));
+            message.To.Add(new MailboxAddress("Recipient", emailTo));
+            message.Subject = subject;
+
+            var body = new TextPart("plain")
+            {
+                Text = msg
             };
-            // Add recipients to the mail message
-            foreach (var email in toEmail)
+
+            var attachment = new MimePart("image", "gif")
             {
-                if (!string.IsNullOrWhiteSpace(email))
-                {
-                    mail.To.Add(new MailAddress(email));
-                }
+                Content = new MimeContent(file),
+                ContentDisposition = new ContentDisposition(ContentDisposition.Attachment),
+                ContentTransferEncoding = ContentEncoding.Base64,
+                FileName = Path.GetFileName(name)
+            };
+            var multipart = new Multipart("mixed");
+            multipart.Add(body);
+            multipart.Add(attachment);
+            message.Body = multipart;
+
+            using (var client = new SmtpClient())
+            {
+                client.Connect("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+
+                client.Authenticate("arhabumer5@gmail.com", "arhab2004");
+
+                var options = FormatOptions.Default.Clone();
+
+                if (client.Capabilities.HasFlag(SmtpCapabilities.UTF8))
+                    options.International = true;
+
+                client.Send(options, message);
+
+                client.Disconnect(true);
             }
 
-            if (attachments != null)
-            {
-                foreach (var attachment in attachments)
-                {
-                    if (attachment.FileBytes != null && !string.IsNullOrWhiteSpace(attachment.FileName))
-                    {
-                        var memoryStream = new MemoryStream(attachment.FileBytes);
-                        mail.Attachments.Add(new Attachment(memoryStream, attachment.FileName));
-                    }
-                }
-            }
-
-            try
-            {
-                smtp.Send(mail);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending email: {ex.Message}");
-            }
-            finally
-            {
-                if (mail.Attachments != null)
-                {
-                    foreach (var attachment in mail.Attachments)
-                    {
-                        attachment.Dispose();
-                    }
-                }
-                mail.Dispose();
-            }
+            return "Success";
         }
     }
 }
