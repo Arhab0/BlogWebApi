@@ -10,6 +10,7 @@ using BlogWebApi.Helpers;
 using Microsoft.EntityFrameworkCore;
 using AgeCalculator;
 using AgeCalculator.Extensions;
+using System.Security.Cryptography;
 
 namespace BlogWebApi.Controllers
 {
@@ -105,6 +106,45 @@ namespace BlogWebApi.Controllers
             {
                 return "x";
             }
+        }
+
+        public IActionResult ForgotPassword(string email)
+        {
+            var user = _context.Users.Where(x => x.Email == email).FirstOrDefault();
+            if (user == null)
+            {
+                return NotFound($"User not Found.");
+            }
+            Random random = new();
+            int randomNumber = random.Next(1000, 10000);
+            //user.PinCode = randomNumber.ToString();
+            _context.SaveChanges();
+            Email.sendMail("Forget Password Code", $"Your code is {randomNumber}", [user.Email]);
+            return Json(new { user.Email });
+        }
+
+        public IActionResult VerifyPin(string email, string pin)
+        {
+            var user = _context.Users.Where(x => x.Email == email).FirstOrDefault();
+            if (user == null)
+            {
+                return NotFound($"User not Found.");
+            }
+            //return Json(new { verified = user.PinCode == pin });
+            return Json(new { user.Email, pin });
+        }
+
+        [HttpPost]
+        public IActionResult ResetPassword(string email, string newPassword)
+        {
+            var user = _context.Users.Where(x => x.Email == email).FirstOrDefault();
+            if (user == null)
+            {
+                return NotFound($"User not Found.");
+            }
+            user.Password = BitConverter.ToString(MD5.HashData(Encoding.ASCII.GetBytes(newPassword))).Replace("-", "").ToLower();
+            _context.SaveChanges();
+            return Json(new { user.Password });
         }
 
         private string GenerateJwtToken(User user)
