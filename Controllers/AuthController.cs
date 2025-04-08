@@ -85,11 +85,19 @@ namespace BlogWebApi.Controllers
                 {
                     var fileName = Path.GetFileName(ufile.FileName);
                     var filePath = Path.Combine(Directory.GetCurrentDirectory(), @"wwwroot\images", fileName);
+
+                    var directory = Path.GetDirectoryName(filePath);
+                    if (!Directory.Exists(directory))
+                    {
+                        Directory.CreateDirectory(directory);
+                    }
+
                     using (var fileStream = new FileStream(filePath, FileMode.Create))
                     {
                         await ufile.CopyToAsync(fileStream);
                     }
-                    return filePath;
+
+                    return Path.Combine(@"\images", fileName);
                 }
                 return "";
             }
