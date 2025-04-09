@@ -29,6 +29,8 @@ public partial class Post
 
     public int? RejectedBy { get; set; }
 
+    public string ReasonForReject { get; set; }
+
     public virtual User ApprovedByNavigation { get; set; }
 
     public virtual Category Cat { get; set; }

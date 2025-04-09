@@ -42,7 +42,7 @@ namespace BlogWebApi.Controllers
                 x.ProfilePic,
                 x.Age,
                 x.Dob
-            }).FirstAsync();
+            }).FirstOrDefaultAsync();
 
             return Json(data);
         }
@@ -53,7 +53,7 @@ namespace BlogWebApi.Controllers
             var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
             int userId = int.Parse(claims[0].Value);
 
-            var user = await _context.Users.Where(x => x.Id == userId).FirstAsync();
+            var user = await _context.Users.Where(x => x.Id == userId).FirstOrDefaultAsync();
             if (user == null)
             {
                 return NotFound("User not found");

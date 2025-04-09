@@ -92,7 +92,7 @@ namespace BlogWebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteComment(int id)
         {
-            var data = await _context.Comments.Where(x => x.Id == id).FirstAsync();
+            var data = await _context.Comments.Where(x => x.Id == id).FirstOrDefaultAsync();
             if (data == null)
             {
                 return BadRequest();
@@ -144,7 +144,7 @@ namespace BlogWebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteReplyComment(int id)
         {
-            var data = await _context.ReplyComments.Where(x => x.Id == id).FirstAsync();
+            var data = await _context.ReplyComments.Where(x => x.Id == id).FirstOrDefaultAsync();
             if (data == null)
             {
                 return BadRequest();
@@ -161,7 +161,7 @@ namespace BlogWebApi.Controllers
             var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
             int userId = int.Parse(claims[0].Value);
 
-            var existingComment = await _context.ReplyComments.Where(x=>x.Id == comment.Id).FirstAsync();
+            var existingComment = await _context.ReplyComments.Where(x=>x.Id == comment.Id).FirstOrDefaultAsync();
 
             existingComment.RepliedTo = comment.RepliedTo;
             existingComment.RepliedBy = userId;

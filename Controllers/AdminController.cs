@@ -47,7 +47,7 @@ namespace BlogWebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> ChangeUserActiveStatus(int id, bool status)
         {
-            var user = await _context.Users.Where(x => x.Id == id).FirstAsync();
+            var user = await _context.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
 
             if (status == true)
             {
@@ -96,7 +96,7 @@ namespace BlogWebApi.Controllers
             var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
             int userId = int.Parse(claims[0].Value);
 
-            var post = await _context.Posts.Where(x => x.Id == id).FirstAsync();
+            var post = await _context.Posts.Where(x => x.Id == id).FirstOrDefaultAsync();
 
             if (check == false)
             {

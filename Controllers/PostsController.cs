@@ -60,57 +60,99 @@ namespace BlogWebApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPostById(int id)
         {
-            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
-            int userId = int.Parse(claims[0].Value);
-
-            var data = await _context.Posts.Where(x=>x.Id == id)
-                        .Join(_context.Categories,
-                            post => post.CatId,
-                            cat => cat.Id,
-                            (posts, cats) => new {posts,cats}
-                          )
-                        .Join(_context.Users,
-                        sc=>sc.posts.UserId,
-                        user =>user.Id,
-                        (sc, user) => new 
-                        {
-                            postId = sc.posts.Id,
-                            sc.posts.Title,
-                            sc.posts.Description,
-                            postImg = sc.posts.Img,
-                            sc.posts.CreatedAt,
-                            sc.cats.Category1,
-                            categoryId = sc.cats.Id,
-                            userId = user.Id,
-                            userPhoto = user.ProfilePic,
-                            AuthorName = user.FirstName + " " + user.LastName
-                        }).ToListAsync();
-
-            var checkOrPost = _context.RecentlyViewedPosts.Where(x => x.PostId == id && x.UserId == userId).First();
-            if (checkOrPost == null)
+            try
             {
-                RecentlyViewedPost postDetails = new()
+
+                var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+                int userId = int.Parse(claims[0].Value);
+
+                var data = await _context.Posts.Where(x => x.Id == id)
+                            .Join(_context.Categories,
+                                post => post.CatId,
+                                cat => cat.Id,
+                                (posts, cats) => new { posts, cats }
+                              )
+                            .Join(_context.Users,
+                            sc => sc.posts.UserId,
+                            user => user.Id,
+                            (sc, user) => new
+                            {
+                                postId = sc.posts.Id,
+                                sc.posts.Title,
+                                sc.posts.Description,
+                                postImg = sc.posts.Img,
+                                sc.posts.CreatedAt,
+                                sc.cats.Category1,
+                                categoryId = sc.cats.Id,
+                                userId = user.Id,
+                                userPhoto = user.ProfilePic,
+                                AuthorName = user.FirstName + " " + user.LastName
+                            }).ToListAsync();
+
+                var checkOrPost = _context.RecentlyViewedPosts.Where(x => x.PostId == id && x.UserId == userId).FirstOrDefault();
+                if (checkOrPost == null)
                 {
-                    PostId = id,
-                    UserId = userId,
-                    LastViewed = DateTime.Now
-                };
-                await _context.RecentlyViewedPosts.AddAsync(postDetails);
-            }
-            checkOrPost.LastViewed = DateTime.Now;
-            await _context.SaveChangesAsync();
+                    RecentlyViewedPost postDetails = new()
+                    {
+                        PostId = id,
+                        UserId = userId,
+                        LastViewed = DateTime.Now
+                    };
+                    await _context.RecentlyViewedPosts.AddAsync(postDetails);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    checkOrPost.LastViewed = DateTime.Now;
+                    await _context.SaveChangesAsync();
+                }
 
-            if (data == null)
-            {
-                return BadRequest("No posts are avaliable");
+                if (data == null)
+                {
+                    return BadRequest("No posts are avaliable");
+                }
+                return Json(data);
             }
-            return Json(data);
+            catch (Exception e)
+            {
+                return Json(e.Message);
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPostByCategory(int id,int postId)
+        {
+            var data = await _context.Posts.Where(x => x.CatId == id && x.IsActive == true && x.Id != postId).Take(5).Select(x => new
+            {
+                x.CatId,
+                CategoryName = x.Cat.Category1,
+                x.Title,
+                x.Img,
+                PostId = x.Id
+            }).ToListAsync();
+
+            if (data.Count == 0)
+            {
+                var otherCategory = await _context.Posts.Where(x => x.IsActive == true && x.Id != postId).Take(5).Select(x => new
+                {
+                    x.CatId,
+                    CategoryName = x.Cat.Category1,
+                    x.Title,
+                    x.Img,
+                    PostId = x.Id
+                }).ToListAsync();
+                return Json(otherCategory);
+            }
+            else
+            {
+                return Json(data);
+            }
         }
 
         [HttpPost]
         public async Task<IActionResult> DeletePost(int id)
         {
-            var data = await _context.Posts.Where(x => x.Id == id).FirstAsync();
+            var data = await _context.Posts.Where(x => x.Id == id).FirstOrDefaultAsync();
             if (data == null)
             {
                 return BadRequest("No posts are avaliable");
@@ -202,7 +244,7 @@ namespace BlogWebApi.Controllers
             var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
             int userId = int.Parse(claims[0].Value);
 
-            var data = await _context.WatchLaters.Where(x => x.PostId == id && x.UserId== userId).FirstAsync();
+            var data = await _context.WatchLaters.Where(x => x.PostId == id && x.UserId== userId).FirstOrDefaultAsync();
             if (data == null)
             {
                 WatchLater _ = new()

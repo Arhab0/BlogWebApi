@@ -143,7 +143,7 @@ namespace BlogWebApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> CreateNewPassword(string password, int userId)
         {
-            var user = await _context.Users.Where(x => x.Id == userId).FirstAsync();
+            var user = await _context.Users.Where(x => x.Id == userId).FirstOrDefaultAsync();
             password = BitConverter.ToString(MD5.HashData(Encoding.ASCII.GetBytes(password))).Replace("-", "").ToLower();
             user.Password = password;
             await _context.SaveChangesAsync();
