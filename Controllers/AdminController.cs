@@ -25,7 +25,7 @@ namespace BlogWebApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUsers()
         {
-            var data = await _context.Users
+            var data = await _context.Users.Where(x=>x.RoleId!=1)
                         .GroupJoin(_context.Posts,
                             user => user.Id,
                             post => post.UserId,
@@ -38,6 +38,8 @@ namespace BlogWebApi.Controllers
                                 user.PhoneNo,
                                 user.Gender,
                                 user.Age,
+                                user.IsActive,
+                                user.Email,
                                 PostCount = posts.Count()
                             })
                         .ToListAsync();
@@ -75,9 +77,9 @@ namespace BlogWebApi.Controllers
                                AuthorName = userPost.user.FirstName + " " + userPost.user.LastName,
                                postId = userPost.post.Id,
                                postTitle = userPost.post.Title,
-                               postDescription = userPost.post.Description.Substring(0, 50),
+                               userPost.post.CreatedAt,
                                postImg = userPost.post.Img,
-                               isApproved = userPost.post.IsApproved,
+                               isApproved = userPost.post.IsApproved == null ? "Pending": userPost.post.IsApproved == false ? "Rejected":"Approved",
                                ActiveStatus = userPost.post.IsActive,
                                CategoryName = category.Category1
                            })
