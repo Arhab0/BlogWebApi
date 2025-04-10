@@ -183,8 +183,47 @@ namespace BlogWebApi.Controllers
             var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
             int userId = int.Parse(claims[0].Value);
 
-            var data = await _context.WatchLaters.Where(x => x.UserId == userId).ToListAsync();
+            var data = await _context.WatchLaters.Where(x => x.UserId == userId && x.IsActive == true)
+                            .Join(_context.Posts.Where(x=>x.IsActive == true),
+                            watchlater => watchlater.PostId,
+                            post=>post.Id,
+                            (watchlater, post) => new 
+                            {
+                                postId = post.Id,
+                                postImg = post.Img,
+                                post.Title
+                            }).ToListAsync();
+
+            if (data.Count == 0)
+            {
+                return Json(new { message = "No post for watch later" });
+            }
             return Json(data);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetWatahLaterPostById(int id)
+        {
+            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            int userId = int.Parse(claims[0].Value);
+
+            var data = await _context.WatchLaters.Where(x => x.UserId == userId && x.PostId == id).FirstOrDefaultAsync();
+            if (data == null)
+            {
+                var finalResult = new
+                {
+                    isWatchLater = data == null ? false : data.IsActive,
+                };
+                return Json(finalResult);
+            }
+            var result = new
+            {
+                isWatchLater = data.IsActive,
+                data.PostId,
+                data.UserId
+            };
+            return Json(result);
+
         }
 
         [HttpPost]
@@ -203,13 +242,13 @@ namespace BlogWebApi.Controllers
                     {
                         data.IsActive = true;
                         await _context.SaveChangesAsync();
-                        return Json(true);
+                        return Json(new { message = true });
                     }
                     else
                     {
                         data.IsActive = false;
                         await _context.SaveChangesAsync();
-                        return Json(false);
+                        return Json(new { message = false });
                     }
                 }
                 else

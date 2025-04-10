@@ -89,7 +89,24 @@ namespace BlogWebApi.Controllers
                                 userId = user.Id,
                                 userPhoto = user.ProfilePic,
                                 AuthorName = user.FirstName + " " + user.LastName
-                            }).ToListAsync();
+                            }).FirstOrDefaultAsync();
+
+                var watchLater = await _context.WatchLaters.FirstOrDefaultAsync(w => w.PostId == id && w.UserId == userId);
+                var finalResult = new
+                {
+                    data.postId,
+                    data.Title,
+                    data.Description,
+                    data.IsActive,
+                    data.IsApproved,
+                    data.postImg,
+                    data.CreatedAt,
+                    data.categoryId,
+                    data.userId,
+                    data.userPhoto,
+                    data.AuthorName,
+                    IsWatchLater = watchLater == null ? false : watchLater.IsActive
+                };
 
                 var checkOrPost = _context.RecentlyViewedPosts.Where(x => x.PostId == id && x.UserId == userId).FirstOrDefault();
                 if (checkOrPost == null)
@@ -109,11 +126,11 @@ namespace BlogWebApi.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                if (data == null)
+                if (finalResult == null)
                 {
                     return BadRequest("No posts are avaliable");
                 }
-                return Json(data);
+                return Json(finalResult);
             }
             catch (Exception e)
             {
@@ -191,20 +208,20 @@ namespace BlogWebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdatePost(Post post, IFormFile? file)
+        public async Task<IActionResult> UpdatePost(Post updatePost, IFormFile? file)
         {
             var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
             int userId = int.Parse(claims[0].Value);
 
-            if (post == null)
+            if (updatePost == null)
             {
                 return BadRequest();
             }
 
-            var existingPost = await _context.Posts.FindAsync(post.Id);
+            var existingPost = await _context.Posts.FindAsync(updatePost.Id);
 
-            existingPost.Title = post.Title;
-            existingPost.Description = post.Description;
+            existingPost.Title = updatePost.Title;
+            existingPost.Description = updatePost.Description;
             existingPost.UserId = userId;
             existingPost.CreatedAt = existingPost.CreatedAt;
             existingPost.CatId = existingPost.CatId;
@@ -213,8 +230,7 @@ namespace BlogWebApi.Controllers
             {
                 existingPost.Img = await UploadFile(file);
             }
-
-            _context.Posts.Update(existingPost);
+            else existingPost.Img = existingPost.Img;
             await _context.SaveChangesAsync();
 
             return Json(true);
