@@ -80,6 +80,8 @@ namespace BlogWebApi.Controllers
                                 postId = sc.posts.Id,
                                 sc.posts.Title,
                                 sc.posts.Description,
+                                sc.posts.IsActive,
+                                sc.posts.IsApproved,
                                 postImg = sc.posts.Img,
                                 sc.posts.CreatedAt,
                                 sc.cats.Category1,
