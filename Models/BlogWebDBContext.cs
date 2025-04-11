@@ -85,10 +85,12 @@ public partial class BlogWebDBContext : DbContext
             entity.Property(e => e.IsActive).HasColumnName("isActive");
             entity.Property(e => e.IsAdult).HasColumnName("isAdult");
             entity.Property(e => e.IsApproved).HasColumnName("isApproved");
+            entity.Property(e => e.IsResubmitted).HasColumnName("isResubmitted");
             entity.Property(e => e.ReasonForReject)
                 .HasMaxLength(255)
                 .IsUnicode(false)
                 .HasColumnName("Reason_for_reject");
+            entity.Property(e => e.RejectCount).HasColumnName("Reject_count");
             entity.Property(e => e.Title)
                 .IsRequired()
                 .HasMaxLength(255)

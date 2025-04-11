@@ -125,6 +125,39 @@ namespace BlogWebApi.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetReSubmitedPosts()
+        {
+            var data = await _context.Users
+                       .Join(_context.Posts.Where(x => x.IsResubmitted == true && x.IsApproved == null),
+                           user => user.Id,
+                           post => post.UserId,
+                           (user, post) => new { user, post })
+                       .Join(_context.Categories,
+                           post => post.post.CatId,
+                           category => category.Id,
+                           (userPost, category) => new
+                           {
+                               AuthorName = userPost.user.FirstName + " " + userPost.user.LastName,
+                               postId = userPost.post.Id,
+                               postTitle = userPost.post.Title,
+                               userPost.post.CreatedAt,
+                               postImg = userPost.post.Img,
+                               isApproved = userPost.post.IsApproved,
+                               ActiveStatus = userPost.post.IsActive,
+                               CategoryName = category.Category1,
+                               userPost.post.RejectCount,
+                               isAdult = userPost.post.IsAdult == true ? "Yes" : "No",
+                           })
+                       .ToListAsync();
+
+            if (data == null)
+            {
+                return BadRequest("No posts are avaliable");
+            }
+            return Json(data);
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetPostById(int id)
         {
             try
@@ -180,6 +213,7 @@ namespace BlogWebApi.Controllers
                 post.IsActive = false;
                 post.RejectedBy = userId;
                 post.ReasonForReject = reason;
+                post.RejectCount++;
                 await _context.SaveChangesAsync();
                 return Json(new { message = "Post has been rejected" });
             }

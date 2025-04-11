@@ -33,6 +33,10 @@ public partial class Post
 
     public bool? IsAdult { get; set; }
 
+    public bool? IsResubmitted { get; set; }
+
+    public int? RejectCount { get; set; }
+
     public virtual User ApprovedByNavigation { get; set; }
 
     public virtual Category Cat { get; set; }

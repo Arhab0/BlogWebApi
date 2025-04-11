@@ -262,6 +262,36 @@ namespace BlogWebApi.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetRejectedPosts()
+        {
+            var data = await _context.Users
+                       .Join(_context.Posts.Where(x => x.IsApproved == false),
+                           user => user.Id,
+                           post => post.UserId,
+                           (user, post) => new { user, post })
+                       .Join(_context.Categories,
+                           post => post.post.CatId,
+                           category => category.Id,
+                           (userPost, category) => new
+                           {
+                               postId = userPost.post.Id,
+                               postTitle = userPost.post.Title,
+                               userPost.post.CreatedAt,
+                               postImg = userPost.post.Img,
+                               CategoryName = category.Category1,
+                               userPost.post.ReasonForReject,
+                               userPost.post.RejectCount
+                           })
+                       .ToListAsync();
+
+            if (data == null)
+            {
+                return BadRequest("No posts are avaliable");
+            }
+            return Json(data);
+        }
+
         public List<Claim> GetClaimsFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();

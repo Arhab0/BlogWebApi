@@ -105,7 +105,8 @@ namespace BlogWebApi.Controllers
                                 categoryId = sc.cats.Id,
                                 userId = user.Id,
                                 userPhoto = user.ProfilePic,
-                                AuthorName = user.FirstName + " " + user.LastName
+                                AuthorName = user.FirstName + " " + user.LastName,
+                                sc.posts.RejectCount
                             }).FirstOrDefaultAsync();
 
                 var checkOrPost = _context.RecentlyViewedPosts.Where(x => x.PostId == id && x.UserId == userId).FirstOrDefault();
@@ -197,6 +198,8 @@ namespace BlogWebApi.Controllers
             post.UserId = userId;
             post.IsApproved = null;
             post.IsActive = null;
+            post.RejectCount = 0;
+            post.IsResubmitted = false;
             if (file != null)
             {
                 post.Img = await UploadFile(file);
@@ -226,6 +229,11 @@ namespace BlogWebApi.Controllers
             existingPost.CreatedAt = existingPost.CreatedAt;
             existingPost.CatId = existingPost.CatId;
             existingPost.IsAdult = updatePost.IsAdult;
+            if (existingPost.IsApproved == false)
+            {
+                existingPost.IsApproved = null;
+                existingPost.IsResubmitted = true;
+            }
 
             if (file != null)
             {
