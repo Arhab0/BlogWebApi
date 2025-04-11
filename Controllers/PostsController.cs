@@ -37,22 +37,39 @@ namespace BlogWebApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPosts()
         {
-            var data = await _context.Posts.Where(x=>x.IsApproved == true).AsNoTracking()
-                        .Join(_context.Categories,
-                            post => post.CatId,
-                            cat => cat.Id,
-                            (posts, cats) => new
-                            {
-                                postId = posts.Id,
-                                posts.Title,
-                                posts.Description,
-                                posts.Img,
-                                cats.Category1,
-                                categoryId = cats.Id
-                            }).ToListAsync();
-            if (data == null)
+            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            int userId = int.Parse(claims[0].Value);
+
+            var user = await _context.Users
+                      .Where(u => u.Id == userId)
+                      .Select(u => new { u.Age })
+                      .FirstOrDefaultAsync();
+
+            if (user == null)
             {
-                return BadRequest("No posts are avaliable");
+                return BadRequest("User not found.");
+            }
+
+            var data = await _context.Posts
+                .Where(x => x.IsApproved == true && (user.Age >= 18 || x.IsAdult == false))
+                .AsNoTracking()
+                .Join(_context.Categories,
+                    post => post.CatId,
+                    cat => cat.Id,
+                    (posts, cats) => new
+                    {
+                        postId = posts.Id,
+                        posts.Title,
+                        posts.Description,
+                        posts.Img,
+                        cats.Category1,
+                        categoryId = cats.Id
+                    })
+                .ToListAsync();
+
+            if (data.Count == 0)
+            {
+                return BadRequest("No posts are available");
             }
             return Json(data);
         }
@@ -91,23 +108,6 @@ namespace BlogWebApi.Controllers
                                 AuthorName = user.FirstName + " " + user.LastName
                             }).FirstOrDefaultAsync();
 
-                var watchLater = await _context.WatchLaters.FirstOrDefaultAsync(w => w.PostId == id && w.UserId == userId);
-                var finalResult = new
-                {
-                    data.postId,
-                    data.Title,
-                    data.Description,
-                    data.IsActive,
-                    data.IsApproved,
-                    data.postImg,
-                    data.CreatedAt,
-                    data.categoryId,
-                    data.userId,
-                    data.userPhoto,
-                    data.AuthorName,
-                    IsWatchLater = watchLater == null ? false : watchLater.IsActive
-                };
-
                 var checkOrPost = _context.RecentlyViewedPosts.Where(x => x.PostId == id && x.UserId == userId).FirstOrDefault();
                 if (checkOrPost == null)
                 {
@@ -126,11 +126,11 @@ namespace BlogWebApi.Controllers
                     await _context.SaveChangesAsync();
                 }
 
-                if (finalResult == null)
+                if (data == null)
                 {
                     return BadRequest("No posts are avaliable");
                 }
-                return Json(finalResult);
+                return Json(data);
             }
             catch (Exception e)
             {
@@ -225,6 +225,7 @@ namespace BlogWebApi.Controllers
             existingPost.UserId = userId;
             existingPost.CreatedAt = existingPost.CreatedAt;
             existingPost.CatId = existingPost.CatId;
+            existingPost.IsAdult = updatePost.IsAdult;
 
             if (file != null)
             {

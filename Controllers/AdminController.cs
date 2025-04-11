@@ -92,8 +92,82 @@ namespace BlogWebApi.Controllers
             return Json(data);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetPendingPosts()
+        {
+            var data = await _context.Users
+                       .Join(_context.Posts.Where(x=>x.IsApproved==null),
+                           user => user.Id,
+                           post => post.UserId,
+                           (user, post) => new { user, post })
+                       .Join(_context.Categories,
+                           post => post.post.CatId,
+                           category => category.Id,
+                           (userPost, category) => new
+                           {
+                               AuthorName = userPost.user.FirstName + " " + userPost.user.LastName,
+                               postId = userPost.post.Id,
+                               postTitle = userPost.post.Title,
+                               userPost.post.CreatedAt,
+                               postImg = userPost.post.Img,
+                               isApproved = userPost.post.IsApproved,
+                               ActiveStatus = userPost.post.IsActive,
+                               CategoryName = category.Category1,
+                               isAdult = userPost.post.IsAdult == true ? "Yes" : "No",
+                           })
+                       .ToListAsync();
+
+            if (data == null)
+            {
+                return BadRequest("No posts are avaliable");
+            }
+            return Json(data);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPostById(int id)
+        {
+            try
+            {
+                var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+                int userId = int.Parse(claims[0].Value);
+
+                var data = await _context.Posts.Where(x => x.Id == id)
+                            .Join(_context.Categories,
+                                post => post.CatId,
+                                cat => cat.Id,
+                                (posts, cats) => new { posts, cats }
+                              )
+                            .Join(_context.Users,
+                            sc => sc.posts.UserId,
+                            user => user.Id,
+                            (sc, user) => new
+                            {
+                                postId = sc.posts.Id,
+                                sc.posts.Title,
+                                sc.posts.Description,
+                                sc.posts.IsActive,
+                                sc.posts.IsApproved,
+                                postImg = sc.posts.Img,
+                                sc.posts.CreatedAt,
+                                sc.cats.Category1,
+                                categoryId = sc.cats.Id,
+                                userId = user.Id,
+                                userPhoto = user.ProfilePic,
+                                AuthorName = user.FirstName + " " + user.LastName
+                            }).FirstOrDefaultAsync();
+
+                return Json(data);
+            }
+            catch (Exception e)
+            {
+                return Json(e.Message);
+            }
+        }
+
+
         [HttpPost]
-        public async Task<IActionResult> ApprovePost(int id, bool check)
+        public async Task<IActionResult> ApprovePost(int id, bool check,string reason)
         {
             var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
             int userId = int.Parse(claims[0].Value);
@@ -105,6 +179,7 @@ namespace BlogWebApi.Controllers
                 post.IsApproved = false;
                 post.IsActive = false;
                 post.RejectedBy = userId;
+                post.ReasonForReject = reason;
                 await _context.SaveChangesAsync();
                 return Json(new { message = "Post has been rejected" });
             }

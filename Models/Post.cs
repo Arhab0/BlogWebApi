@@ -31,6 +31,8 @@ public partial class Post
 
     public string ReasonForReject { get; set; }
 
+    public bool? IsAdult { get; set; }
+
     public virtual User ApprovedByNavigation { get; set; }
 
     public virtual Category Cat { get; set; }

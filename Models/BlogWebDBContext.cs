@@ -83,6 +83,7 @@ public partial class BlogWebDBContext : DbContext
                 .HasColumnType("text")
                 .HasColumnName("img");
             entity.Property(e => e.IsActive).HasColumnName("isActive");
+            entity.Property(e => e.IsAdult).HasColumnName("isAdult");
             entity.Property(e => e.IsApproved).HasColumnName("isApproved");
             entity.Property(e => e.ReasonForReject)
                 .HasMaxLength(255)
