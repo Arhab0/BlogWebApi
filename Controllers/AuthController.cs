@@ -32,11 +32,18 @@ namespace BlogWebApi.Controllers
         public async Task<IActionResult> Login(string email, string password)
         {
             password = Security.Encrypt(password);
-            var user = await _context.Users.Where(x => x.Email == email && x.Password == password && x.IsActive == true).FirstOrDefaultAsync();
+            var user = await _context.Users.Where(x => x.Email == email && x.Password == password).FirstOrDefaultAsync();
             if (user == null) { return Json("User not Found"); }
-            var token = GenerateJwtToken(user);
-            user.Password = null;
-            return Json(new { token, user });
+            else if (user.IsActive == false)
+            {
+                return Json(new { message=user.ReasonForDeactivation });
+            }
+            else
+            {
+                var token = GenerateJwtToken(user);
+                user.Password = null;
+                return Json(new { token, user });
+            }
         }
 
         [HttpPost]

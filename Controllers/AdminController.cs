@@ -40,14 +40,16 @@ namespace BlogWebApi.Controllers
                                 user.Age,
                                 user.IsActive,
                                 user.Email,
-                                PostCount = posts.Count()
+                                PostCount = posts.Count(),
+                                RejectCount = posts.Select(x=>x.RejectCount).Sum(),
+                                user.Id
                             })
                         .ToListAsync();
             return Json(data);
         }
 
         [HttpPost]
-        public async Task<IActionResult> ChangeUserActiveStatus(int id, bool status)
+        public async Task<IActionResult> ChangeUserActiveStatus(int id, bool status,string reasonForDeactivation)
         {
             var user = await _context.Users.Where(x => x.Id == id).FirstOrDefaultAsync();
 
@@ -55,9 +57,13 @@ namespace BlogWebApi.Controllers
             {
                 user.IsActive = true;
             }
-            else user.IsActive = false;
+            else
+            {
+                user.IsActive = false;
+                user.ReasonForDeactivation = reasonForDeactivation;
+            }
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             return Json("User Active status has been changed");
         }
 

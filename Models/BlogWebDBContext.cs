@@ -238,6 +238,10 @@ public partial class BlogWebDBContext : DbContext
             entity.Property(e => e.ProfilePic)
                 .HasColumnType("text")
                 .HasColumnName("profile_pic");
+            entity.Property(e => e.ReasonForDeactivation)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("Reason_for_Deactivation");
             entity.Property(e => e.RoleId).HasColumnName("role_id");
             entity.Property(e => e.State)
                 .HasMaxLength(50)

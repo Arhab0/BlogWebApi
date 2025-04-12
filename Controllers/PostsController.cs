@@ -42,7 +42,7 @@ namespace BlogWebApi.Controllers
 
             var user = await _context.Users
                       .Where(u => u.Id == userId)
-                      .Select(u => new { u.Age })
+                      .Select(u => new { u.Age,u.IsActive })
                       .FirstOrDefaultAsync();
 
             if (user == null)
@@ -51,7 +51,7 @@ namespace BlogWebApi.Controllers
             }
 
             var data = await _context.Posts
-                .Where(x => x.IsApproved == true && (user.Age >= 18 || x.IsAdult == false))
+                .Where(x => x.IsApproved == true && (user.Age >= 18 || x.IsAdult == false) && x.User.IsActive == true)
                 .AsNoTracking()
                 .Join(_context.Categories,
                     post => post.CatId,

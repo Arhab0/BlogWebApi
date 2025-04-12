@@ -39,6 +39,8 @@ public partial class User
 
     public DateTime? Dob { get; set; }
 
+    public string ReasonForDeactivation { get; set; }
+
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
     public virtual ICollection<Post> PostApprovedByNavigations { get; set; } = new List<Post>();

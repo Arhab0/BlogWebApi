@@ -26,7 +26,7 @@ namespace BlogWebApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetComments(int id)
         {
-            var comments = await _context.Comments.Where(x=>x.PostId == id)
+            var comments = await _context.Comments.Where(x=>x.PostId == id).OrderByDescending(x=>x.Id)
                         .Join(_context.Users,
                             comments => comments.UserId,
                             user => user.Id,
@@ -38,6 +38,7 @@ namespace BlogWebApi.Controllers
                                 comments.IsEdited,
                                 users.ProfilePic,
                                 userId = users.Id,
+                                postId = comments.PostId,
                                 userName = users.FirstName + " " + users.LastName
                             }).ToListAsync();
             if (comments == null)
@@ -67,14 +68,36 @@ namespace BlogWebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> UpdateComment(Comment comment)
+        public async Task<IActionResult> AddReplyComment(ReplyComment comment)
         {
             var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
             int userId = int.Parse(claims[0].Value);
 
-            var existingComment = await _context.Comments.FindAsync(comment.Id);
-
             if (comment == null)
+            {
+                return BadRequest();
+            }
+
+            var replyTo = await _context.Comments.Where(x => x.Id == comment.CommentId).Select(x => x.UserId ).FirstOrDefaultAsync();
+
+            comment.RepliedAt = DateTime.Now;
+            comment.RepliedBy = userId;
+            comment.RepliedTo = replyTo;
+
+            await _context.ReplyComments.AddAsync(comment);
+            await _context.SaveChangesAsync();
+            return Json(true);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> UpdateComment(Comment updateComment)
+        {
+            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            int userId = int.Parse(claims[0].Value);
+
+            var existingComment = await _context.Comments.FindAsync(updateComment.Id);
+
+            if (updateComment == null)
             {
                 return BadRequest();
             }
@@ -82,9 +105,9 @@ namespace BlogWebApi.Controllers
             existingComment.PostId = existingComment.PostId;
             existingComment.CommentAt = existingComment.CommentAt;
             existingComment.UserId = userId;
-            existingComment.IsEdited = existingComment.IsEdited;
+            existingComment.IsEdited = true;
+            existingComment.Comment1 = updateComment.Comment1;
 
-            _context.Comments.Update(existingComment);
             await _context.SaveChangesAsync();
             return Json(true);
         }
@@ -163,13 +186,15 @@ namespace BlogWebApi.Controllers
 
             var existingComment = await _context.ReplyComments.Where(x=>x.Id == comment.Id).FirstOrDefaultAsync();
 
-            existingComment.RepliedTo = comment.RepliedTo;
+            existingComment.RepliedTo = existingComment.RepliedTo;
             existingComment.RepliedBy = userId;
             existingComment.RepliedAt = existingComment.RepliedAt;
-            existingComment.PostId = comment.PostId;
-            existingComment.CommentId = comment.CommentId;
+            existingComment.PostId = existingComment.PostId;
+            existingComment.CommentId = existingComment.CommentId;
+            existingComment.Reply = comment.Reply;
+            existingComment.IsEdited = true;
 
-            _context.ReplyComments.Update(existingComment);
+            //_context.ReplyComments.Update(existingComment);
             await _context.SaveChangesAsync();
             return Json(true);
         }
