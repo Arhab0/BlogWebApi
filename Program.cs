@@ -1,4 +1,5 @@
-﻿using BlogWebApi.Models;
+﻿using BlogWebApi.Helpers;
+using BlogWebApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -33,6 +34,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddTransient<Email>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

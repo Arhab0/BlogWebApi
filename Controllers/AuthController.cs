@@ -14,13 +14,14 @@ using System.Security.Cryptography;
 
 namespace BlogWebApi.Controllers
 {
-    public class AuthController(BlogWebDBContext context) : Controller
+    public class AuthController(BlogWebDBContext context,Email email) : Controller
     {
         public override JsonResult Json(object? data)
         {
             return new JsonResult(data, new JsonSerializerOptions { PropertyNamingPolicy = null });
         }
         private readonly BlogWebDBContext _context = context;
+        private readonly Email _email = email;
 
         public IActionResult Index()
         {
@@ -129,7 +130,7 @@ namespace BlogWebApi.Controllers
                 var rand = new Random();
                 var uid = rand.Next(1000, 10000);
 
-                Email.SendMessage(
+                _email.SendMessage(
                     $"Hi {user.FirstName} {user.LastName}\n" +
                     $"Your One Time Password(OTP) is :\r\n" +
                     $"<b>{uid}</b>\r\n" +
@@ -151,8 +152,9 @@ namespace BlogWebApi.Controllers
         public async Task<IActionResult> CreateNewPassword(string password, int userId)
         {
             var user = await _context.Users.Where(x => x.Id == userId).FirstOrDefaultAsync();
-            password = BitConverter.ToString(MD5.HashData(Encoding.ASCII.GetBytes(password))).Replace("-", "").ToLower();
-            user.Password = password;
+            //password = BitConverter.ToString(MD5.HashData(Encoding.ASCII.GetBytes(password))).Replace("-", "").ToLower();
+            var encryptedPassword = Security.Encrypt(password);
+            user.Password = encryptedPassword;
             await _context.SaveChangesAsync();
             return Json(new { user });
         }
