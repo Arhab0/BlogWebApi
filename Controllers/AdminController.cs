@@ -230,6 +230,31 @@ namespace BlogWebApi.Controllers
             return Json(new { message = "Post has been approved" });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Information()
+        {
+            var totalUsers = await _context.Users.CountAsync();
+            var activeUsers = await _context.Users.CountAsync(x => x.IsActive == true);
+            var deactivatedUsers = await _context.Users.CountAsync(x => x.IsActive == false);
+
+            var totalPosts = await _context.Posts.CountAsync();
+            var pendingPosts = await _context.Posts.CountAsync(x => x.IsApproved == null);
+            var activePosts = await _context.Posts.CountAsync(x => x.IsApproved == true && x.IsActive == true);
+            var rejectedPosts = await _context.Posts.CountAsync(x => x.IsApproved == false && x.IsActive == false);
+
+            return Json(new
+            {
+                TotalUsers = totalUsers,
+                ActiveUsers = activeUsers,
+                DeActivatedUsers = deactivatedUsers,
+                TotalPosts = totalPosts,
+                PendingPosts = pendingPosts,
+                ActivePosts = activePosts,
+                RejectedPosts = rejectedPosts,
+            });
+        }
+
+
         public List<Claim> GetClaimsFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
