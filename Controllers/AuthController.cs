@@ -63,7 +63,7 @@ namespace BlogWebApi.Controllers
             user.CreatedAt = DateTime.Now;
             user.RoleId = 2;
             user.IsActive = true;
-
+            user.CanSeeMyFollowers = true;
             if (user.Dob.HasValue)
             {
                 var dob = user.Dob.Value;

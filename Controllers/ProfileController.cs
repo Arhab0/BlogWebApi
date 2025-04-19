@@ -45,9 +45,37 @@ namespace BlogWebApi.Controllers
                 x.Age,
                 x.Dob,
                 x.Gender,
+                x.CanSeeMyFollowers
+                
             }).FirstOrDefaultAsync();
 
-            return Json(data);
+            var _ = await _context.Followers.ToListAsync();
+            var Followers = _.Where(x => x.FollowedTo == userId).Count();
+            var Following = _.Where(x => x.FollowedBy == userId).Count();
+            var PostCount = await _context.Posts.Where(x => x.UserId == userId).CountAsync();
+
+            var finalResult = new
+            {
+                data.Id,
+                FullName = (data.FirstName+" "+data.LastName).Trim(),
+                data.FirstName,
+                data.LastName,
+                data.PhoneNo,
+                data.Email,
+                data.Country,
+                data.State,
+                data.City,
+                data.ProfilePic,
+                data.Age,
+                data.Dob,
+                data.Gender,
+                data.CanSeeMyFollowers,
+                Followers,
+                Following,
+                PostCount
+            };
+
+            return Json(finalResult);
         }
 
         [HttpPost]
@@ -74,6 +102,7 @@ namespace BlogWebApi.Controllers
                 user.State = updatedUser.State != "" ? updatedUser.State : user.State;
                 user.City = updatedUser.City != "" ? updatedUser.City : user.City;
                 user.PhoneNo = updatedUser.PhoneNo != "" ? updatedUser.PhoneNo : user.PhoneNo;
+                user.CanSeeMyFollowers = user.CanSeeMyFollowers != updatedUser.CanSeeMyFollowers ? updatedUser.CanSeeMyFollowers : user.CanSeeMyFollowers;
 
                 if (updatedUser.Dob.HasValue)
                 {
@@ -132,7 +161,7 @@ namespace BlogWebApi.Controllers
                 x.CreatedAt,
                 isActive = x.IsActive,
                 x.IsApproved,
-                Description = x.Description.Substring(0,50)
+                x.Description
             }).ToListAsync();
 
             if (data.Count == 0)
