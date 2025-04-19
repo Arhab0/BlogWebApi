@@ -26,12 +26,12 @@ namespace BlogWebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUserInfo()
+        public async Task<IActionResult> GetUserInfo(int id)
         {
-            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
-            int userId = int.Parse(claims[0].Value);
+            //var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            //int userId = int.Parse(claims[0].Value);
 
-            var data = await _context.Users.Where(x => x.Id == userId).Select(x=> new
+            var data = await _context.Users.Where(x => x.Id == id).Select(x=> new
             {
                 x.Id,
                 x.FirstName,
@@ -50,9 +50,9 @@ namespace BlogWebApi.Controllers
             }).FirstOrDefaultAsync();
 
             var _ = await _context.Followers.ToListAsync();
-            var Followers = _.Where(x => x.FollowedTo == userId).Count();
-            var Following = _.Where(x => x.FollowedBy == userId).Count();
-            var PostCount = await _context.Posts.Where(x => x.UserId == userId).CountAsync();
+            var Followers = _.Where(x => x.FollowedTo == id).Count();
+            var Following = _.Where(x => x.FollowedBy == id).Count();
+            var PostCount = await _context.Posts.Where(x => x.UserId == id).CountAsync();
 
             var finalResult = new
             {
@@ -148,12 +148,12 @@ namespace BlogWebApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllPostOfUser()
+        public async Task<IActionResult> GetAllPostOfUser(int id)
         {
-            var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
-            int userId = int.Parse(claims[0].Value);
+            //var claims = GetClaimsFromToken(Request?.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last() ?? "");
+            //int userId = int.Parse(claims[0].Value);
 
-            var data = await _context.Posts.Where(x => x.UserId == userId).Select(x => new
+            var data = await _context.Posts.Where(x => x.UserId == id).Select(x => new
             {
                 x.Id,
                 x.Img,
