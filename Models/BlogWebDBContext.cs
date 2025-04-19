@@ -17,6 +17,8 @@ public partial class BlogWebDBContext : DbContext
 
     public virtual DbSet<Comment> Comments { get; set; }
 
+    public virtual DbSet<Follower> Followers { get; set; }
+
     public virtual DbSet<Post> Posts { get; set; }
 
     public virtual DbSet<RecentlyViewedPost> RecentlyViewedPosts { get; set; }
@@ -67,6 +69,28 @@ public partial class BlogWebDBContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_comments_users");
+        });
+
+        modelBuilder.Entity<Follower>(entity =>
+        {
+            entity.ToTable("followers");
+
+            entity.Property(e => e.FollowedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("followed_at");
+            entity.Property(e => e.FollowedBy).HasColumnName("followed_by");
+            entity.Property(e => e.FollowedTo).HasColumnName("followed_to");
+            entity.Property(e => e.IsFollowingActive).HasColumnName("isFollowingActive");
+
+            entity.HasOne(d => d.FollowedByNavigation).WithMany(p => p.FollowerFollowedByNavigations)
+                .HasForeignKey(d => d.FollowedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_followers_users");
+
+            entity.HasOne(d => d.FollowedToNavigation).WithMany(p => p.FollowerFollowedToNavigations)
+                .HasForeignKey(d => d.FollowedTo)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_followers_users1");
         });
 
         modelBuilder.Entity<Post>(entity =>
@@ -193,6 +217,7 @@ public partial class BlogWebDBContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Age).HasColumnName("age");
+            entity.Property(e => e.CanSeeMyFollowers).HasColumnName("can_see_my_followers");
             entity.Property(e => e.City)
                 .HasMaxLength(50)
                 .IsUnicode(false)

@@ -41,7 +41,13 @@ public partial class User
 
     public string ReasonForDeactivation { get; set; }
 
+    public bool? CanSeeMyFollowers { get; set; }
+
     public virtual ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+    public virtual ICollection<Follower> FollowerFollowedByNavigations { get; set; } = new List<Follower>();
+
+    public virtual ICollection<Follower> FollowerFollowedToNavigations { get; set; } = new List<Follower>();
 
     public virtual ICollection<Post> PostApprovedByNavigations { get; set; } = new List<Post>();
 
