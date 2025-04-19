@@ -241,6 +241,7 @@ namespace BlogWebApi.Controllers
             var pendingPosts = await _context.Posts.CountAsync(x => x.IsApproved == null);
             var activePosts = await _context.Posts.CountAsync(x => x.IsApproved == true && x.IsActive == true);
             var rejectedPosts = await _context.Posts.CountAsync(x => x.IsApproved == false && x.IsActive == false);
+            var reSubmittedPosts = await _context.Posts.CountAsync(x =>x.IsResubmitted == true && x.IsApproved == null);
 
             return Json(new
             {
@@ -251,6 +252,7 @@ namespace BlogWebApi.Controllers
                 PendingPosts = pendingPosts,
                 ActivePosts = activePosts,
                 RejectedPosts = rejectedPosts,
+                ReSubmittedPosts = reSubmittedPosts
             });
         }
 
